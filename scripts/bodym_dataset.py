@@ -305,6 +305,11 @@ class BodyMManifestDataset(Dataset[dict[str, Any]]):
             view_name: self._load_view_tensor(str(row[VIEW_TO_PATH_COLUMN[view_name]]))
             for view_name in self._view_names
         }
+        metadata = {
+            "hwg_gender": str(row["hwg_gender"]),
+            "hwg_height_cm": float(row["hwg_height_cm"]),
+            "hwg_weight_kg": float(row["hwg_weight_kg"]),
+        }
         targets = torch.tensor(
             [float(row[column]) for column in self._target_columns],
             dtype=torch.float32,
@@ -314,6 +319,7 @@ class BodyMManifestDataset(Dataset[dict[str, Any]]):
             "subject_id": str(row["subject_id"]),
             "subject_key": str(row["subject_key"]),
             "photo_id": str(row["photo_id"]),
+            "metadata": metadata,
             "views": views,
             "targets": targets,
         }

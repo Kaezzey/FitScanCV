@@ -1,0 +1,855 @@
+{
+  "dataset_root": "C:\\Users\\niket\\OneDrive\\Desktop\\Coding\\ML\\FitScanCV\\data\\raw\\bodym",
+  "discovered_splits": [
+    "train",
+    "testA",
+    "testB"
+  ],
+  "file_type_summary": {
+    ".csv": 9,
+    ".png": 17956
+  },
+  "splits": [
+    {
+      "name": "train",
+      "relative_path": "train",
+      "artifacts": {
+        "csv_files": {
+          "hwg_metadata.csv": {
+            "exists": true,
+            "relative_path": "train/hwg_metadata.csv",
+            "row_count": 2018,
+            "columns": [
+              "subject_id",
+              "gender",
+              "height_cm",
+              "weight_kg"
+            ],
+            "sample_paths": [
+              "train/hwg_metadata.csv"
+            ],
+            "unique_subject_ids": 2018,
+            "duplicate_subject_id_rows": 0,
+            "duplicate_subject_id_examples": []
+          },
+          "measurements.csv": {
+            "exists": true,
+            "relative_path": "train/measurements.csv",
+            "row_count": 2018,
+            "columns": [
+              "subject_id",
+              "ankle",
+              "arm-length",
+              "bicep",
+              "calf",
+              "chest",
+              "forearm",
+              "height",
+              "hip",
+              "leg-length",
+              "shoulder-breadth",
+              "shoulder-to-crotch",
+              "thigh",
+              "waist",
+              "wrist"
+            ],
+            "sample_paths": [
+              "train/measurements.csv"
+            ],
+            "unique_subject_ids": 2018,
+            "duplicate_subject_id_rows": 0,
+            "duplicate_subject_id_examples": []
+          },
+          "subject_to_photo_map.csv": {
+            "exists": true,
+            "relative_path": "train/subject_to_photo_map.csv",
+            "row_count": 6134,
+            "columns": [
+              "subject_id",
+              "photo_id"
+            ],
+            "sample_paths": [
+              "train/subject_to_photo_map.csv"
+            ],
+            "unique_subject_ids": 2018,
+            "unique_photo_ids": 6134,
+            "duplicate_photo_id_rows": 0,
+            "duplicate_photo_id_examples": [],
+            "duplicate_subject_photo_rows": 0,
+            "duplicate_subject_photo_examples": []
+          }
+        },
+        "image_directories": {
+          "mask": {
+            "exists": true,
+            "relative_path": "train/mask",
+            "png_count": 6134,
+            "unique_basenames": 6134,
+            "duplicate_basename_files": 0,
+            "duplicate_basename_examples": [],
+            "sample_paths": [
+              "train/mask/001f3a88501980a5eca6f6346a0ca8d9.png",
+              "train/mask/0023f967e5089c95ae22c43e25b2cef1.png"
+            ],
+            "sample_dimensions": [
+              {
+                "file": "train/mask/001f3a88501980a5eca6f6346a0ca8d9.png",
+                "width": 720,
+                "height": 960
+              },
+              {
+                "file": "train/mask/0023f967e5089c95ae22c43e25b2cef1.png",
+                "width": 720,
+                "height": 960
+              }
+            ]
+          },
+          "mask_left": {
+            "exists": true,
+            "relative_path": "train/mask_left",
+            "png_count": 6134,
+            "unique_basenames": 6134,
+            "duplicate_basename_files": 0,
+            "duplicate_basename_examples": [],
+            "sample_paths": [
+              "train/mask_left/001f3a88501980a5eca6f6346a0ca8d9.png",
+              "train/mask_left/0023f967e5089c95ae22c43e25b2cef1.png"
+            ],
+            "sample_dimensions": [
+              {
+                "file": "train/mask_left/001f3a88501980a5eca6f6346a0ca8d9.png",
+                "width": 720,
+                "height": 960
+              },
+              {
+                "file": "train/mask_left/0023f967e5089c95ae22c43e25b2cef1.png",
+                "width": 720,
+                "height": 960
+              }
+            ]
+          }
+        }
+      },
+      "mapping_summary": {
+        "unique_subject_ids": {
+          "hwg_metadata.csv": 2018,
+          "measurements.csv": 2018,
+          "subject_to_photo_map.csv": 2018
+        },
+        "unique_photo_ids": 6134,
+        "photos_per_subject": {
+          "min": 1,
+          "max": 27,
+          "avg": 3.04
+        }
+      }
+    },
+    {
+      "name": "testA",
+      "relative_path": "testA",
+      "artifacts": {
+        "csv_files": {
+          "hwg_metadata.csv": {
+            "exists": true,
+            "relative_path": "testA/hwg_metadata.csv",
+            "row_count": 87,
+            "columns": [
+              "subject_id",
+              "gender",
+              "height_cm",
+              "weight_kg"
+            ],
+            "sample_paths": [
+              "testA/hwg_metadata.csv"
+            ],
+            "unique_subject_ids": 87,
+            "duplicate_subject_id_rows": 0,
+            "duplicate_subject_id_examples": []
+          },
+          "measurements.csv": {
+            "exists": true,
+            "relative_path": "testA/measurements.csv",
+            "row_count": 87,
+            "columns": [
+              "subject_id",
+              "ankle",
+              "arm-length",
+              "bicep",
+              "calf",
+              "chest",
+              "forearm",
+              "height",
+              "hip",
+              "leg-length",
+              "shoulder-breadth",
+              "shoulder-to-crotch",
+              "thigh",
+              "waist",
+              "wrist"
+            ],
+            "sample_paths": [
+              "testA/measurements.csv"
+            ],
+            "unique_subject_ids": 87,
+            "duplicate_subject_id_rows": 0,
+            "duplicate_subject_id_examples": []
+          },
+          "subject_to_photo_map.csv": {
+            "exists": true,
+            "relative_path": "testA/subject_to_photo_map.csv",
+            "row_count": 1684,
+            "columns": [
+              "subject_id",
+              "photo_id"
+            ],
+            "sample_paths": [
+              "testA/subject_to_photo_map.csv"
+            ],
+            "unique_subject_ids": 87,
+            "unique_photo_ids": 1684,
+            "duplicate_photo_id_rows": 0,
+            "duplicate_photo_id_examples": [],
+            "duplicate_subject_photo_rows": 0,
+            "duplicate_subject_photo_examples": []
+          }
+        },
+        "image_directories": {
+          "mask": {
+            "exists": true,
+            "relative_path": "testA/mask",
+            "png_count": 1684,
+            "unique_basenames": 1684,
+            "duplicate_basename_files": 0,
+            "duplicate_basename_examples": [],
+            "sample_paths": [
+              "testA/mask/00112158c308d48307e95b841f678df8.png",
+              "testA/mask/0048f0d9a4d0ca697e31077bab7b2471.png"
+            ],
+            "sample_dimensions": [
+              {
+                "file": "testA/mask/00112158c308d48307e95b841f678df8.png",
+                "width": 720,
+                "height": 960
+              },
+              {
+                "file": "testA/mask/0048f0d9a4d0ca697e31077bab7b2471.png",
+                "width": 720,
+                "height": 960
+              }
+            ]
+          },
+          "mask_left": {
+            "exists": true,
+            "relative_path": "testA/mask_left",
+            "png_count": 1684,
+            "unique_basenames": 1684,
+            "duplicate_basename_files": 0,
+            "duplicate_basename_examples": [],
+            "sample_paths": [
+              "testA/mask_left/00112158c308d48307e95b841f678df8.png",
+              "testA/mask_left/0048f0d9a4d0ca697e31077bab7b2471.png"
+            ],
+            "sample_dimensions": [
+              {
+                "file": "testA/mask_left/00112158c308d48307e95b841f678df8.png",
+                "width": 720,
+                "height": 960
+              },
+              {
+                "file": "testA/mask_left/0048f0d9a4d0ca697e31077bab7b2471.png",
+                "width": 720,
+                "height": 960
+              }
+            ]
+          }
+        }
+      },
+      "mapping_summary": {
+        "unique_subject_ids": {
+          "hwg_metadata.csv": 87,
+          "measurements.csv": 87,
+          "subject_to_photo_map.csv": 87
+        },
+        "unique_photo_ids": 1684,
+        "photos_per_subject": {
+          "min": 4,
+          "max": 45,
+          "avg": 19.36
+        }
+      }
+    },
+    {
+      "name": "testB",
+      "relative_path": "testB",
+      "artifacts": {
+        "csv_files": {
+          "hwg_metadata.csv": {
+            "exists": true,
+            "relative_path": "testB/hwg_metadata.csv",
+            "row_count": 400,
+            "columns": [
+              "subject_id",
+              "gender",
+              "height_cm",
+              "weight_kg"
+            ],
+            "sample_paths": [
+              "testB/hwg_metadata.csv"
+            ],
+            "unique_subject_ids": 400,
+            "duplicate_subject_id_rows": 0,
+            "duplicate_subject_id_examples": []
+          },
+          "measurements.csv": {
+            "exists": true,
+            "relative_path": "testB/measurements.csv",
+            "row_count": 400,
+            "columns": [
+              "subject_id",
+              "ankle",
+              "arm-length",
+              "bicep",
+              "calf",
+              "chest",
+              "forearm",
+              "height",
+              "hip",
+              "leg-length",
+              "shoulder-breadth",
+              "shoulder-to-crotch",
+              "thigh",
+              "waist",
+              "wrist"
+            ],
+            "sample_paths": [
+              "testB/measurements.csv"
+            ],
+            "unique_subject_ids": 400,
+            "duplicate_subject_id_rows": 0,
+            "duplicate_subject_id_examples": []
+          },
+          "subject_to_photo_map.csv": {
+            "exists": true,
+            "relative_path": "testB/subject_to_photo_map.csv",
+            "row_count": 1160,
+            "columns": [
+              "subject_id",
+              "photo_id"
+            ],
+            "sample_paths": [
+              "testB/subject_to_photo_map.csv"
+            ],
+            "unique_subject_ids": 400,
+            "unique_photo_ids": 1160,
+            "duplicate_photo_id_rows": 0,
+            "duplicate_photo_id_examples": [],
+            "duplicate_subject_photo_rows": 0,
+            "duplicate_subject_photo_examples": []
+          }
+        },
+        "image_directories": {
+          "mask": {
+            "exists": true,
+            "relative_path": "testB/mask",
+            "png_count": 1160,
+            "unique_basenames": 1160,
+            "duplicate_basename_files": 0,
+            "duplicate_basename_examples": [],
+            "sample_paths": [
+              "testB/mask/003981667ee238d4fa02d98c7b77efcb.png",
+              "testB/mask/0188b0a27a2544b66186f051c478ff42.png"
+            ],
+            "sample_dimensions": [
+              {
+                "file": "testB/mask/003981667ee238d4fa02d98c7b77efcb.png",
+                "width": 720,
+                "height": 960
+              },
+              {
+                "file": "testB/mask/0188b0a27a2544b66186f051c478ff42.png",
+                "width": 720,
+                "height": 960
+              }
+            ]
+          },
+          "mask_left": {
+            "exists": true,
+            "relative_path": "testB/mask_left",
+            "png_count": 1160,
+            "unique_basenames": 1160,
+            "duplicate_basename_files": 0,
+            "duplicate_basename_examples": [],
+            "sample_paths": [
+              "testB/mask_left/003981667ee238d4fa02d98c7b77efcb.png",
+              "testB/mask_left/0188b0a27a2544b66186f051c478ff42.png"
+            ],
+            "sample_dimensions": [
+              {
+                "file": "testB/mask_left/003981667ee238d4fa02d98c7b77efcb.png",
+                "width": 720,
+                "height": 960
+              },
+              {
+                "file": "testB/mask_left/0188b0a27a2544b66186f051c478ff42.png",
+                "width": 720,
+                "height": 960
+              }
+            ]
+          }
+        }
+      },
+      "mapping_summary": {
+        "unique_subject_ids": {
+          "hwg_metadata.csv": 400,
+          "measurements.csv": 400,
+          "subject_to_photo_map.csv": 400
+        },
+        "unique_photo_ids": 1160,
+        "photos_per_subject": {
+          "min": 1,
+          "max": 11,
+          "avg": 2.9
+        }
+      }
+    }
+  ],
+  "csv_schemas": {
+    "train": {
+      "hwg_metadata.csv": [
+        "subject_id",
+        "gender",
+        "height_cm",
+        "weight_kg"
+      ],
+      "measurements.csv": [
+        "subject_id",
+        "ankle",
+        "arm-length",
+        "bicep",
+        "calf",
+        "chest",
+        "forearm",
+        "height",
+        "hip",
+        "leg-length",
+        "shoulder-breadth",
+        "shoulder-to-crotch",
+        "thigh",
+        "waist",
+        "wrist"
+      ],
+      "subject_to_photo_map.csv": [
+        "subject_id",
+        "photo_id"
+      ]
+    },
+    "testA": {
+      "hwg_metadata.csv": [
+        "subject_id",
+        "gender",
+        "height_cm",
+        "weight_kg"
+      ],
+      "measurements.csv": [
+        "subject_id",
+        "ankle",
+        "arm-length",
+        "bicep",
+        "calf",
+        "chest",
+        "forearm",
+        "height",
+        "hip",
+        "leg-length",
+        "shoulder-breadth",
+        "shoulder-to-crotch",
+        "thigh",
+        "waist",
+        "wrist"
+      ],
+      "subject_to_photo_map.csv": [
+        "subject_id",
+        "photo_id"
+      ]
+    },
+    "testB": {
+      "hwg_metadata.csv": [
+        "subject_id",
+        "gender",
+        "height_cm",
+        "weight_kg"
+      ],
+      "measurements.csv": [
+        "subject_id",
+        "ankle",
+        "arm-length",
+        "bicep",
+        "calf",
+        "chest",
+        "forearm",
+        "height",
+        "hip",
+        "leg-length",
+        "shoulder-breadth",
+        "shoulder-to-crotch",
+        "thigh",
+        "waist",
+        "wrist"
+      ],
+      "subject_to_photo_map.csv": [
+        "subject_id",
+        "photo_id"
+      ]
+    }
+  },
+  "integrity_checks": {
+    "train": {
+      "expected_artifacts_present": {
+        "csv_files": {
+          "hwg_metadata.csv": true,
+          "measurements.csv": true,
+          "subject_to_photo_map.csv": true
+        },
+        "image_directories": {
+          "mask": true,
+          "mask_left": true
+        }
+      },
+      "subject_id_alignment": {
+        "hwg_minus_measurements_count": 0,
+        "hwg_minus_measurements_examples": [],
+        "measurements_minus_hwg_count": 0,
+        "measurements_minus_hwg_examples": [],
+        "hwg_minus_photo_map_count": 0,
+        "hwg_minus_photo_map_examples": [],
+        "photo_map_minus_hwg_count": 0,
+        "photo_map_minus_hwg_examples": []
+      },
+      "photo_id_alignment": {
+        "mask": {
+          "photo_map_minus_mask_count": 0,
+          "photo_map_minus_mask_examples": [],
+          "mask_minus_photo_map_count": 0,
+          "mask_minus_photo_map_examples": []
+        },
+        "mask_left": {
+          "photo_map_minus_mask_left_count": 0,
+          "photo_map_minus_mask_left_examples": [],
+          "mask_left_minus_photo_map_count": 0,
+          "mask_left_minus_photo_map_examples": []
+        },
+        "mask_vs_mask_left": {
+          "mask_minus_mask_left_count": 0,
+          "mask_minus_mask_left_examples": [],
+          "mask_left_minus_mask_count": 0,
+          "mask_left_minus_mask_examples": []
+        }
+      },
+      "duplicates": {
+        "hwg_metadata.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "measurements.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "subject_to_photo_map.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "mask": {
+          "duplicate_basename_files": 0
+        },
+        "mask_left": {
+          "duplicate_basename_files": 0
+        }
+      }
+    },
+    "testA": {
+      "expected_artifacts_present": {
+        "csv_files": {
+          "hwg_metadata.csv": true,
+          "measurements.csv": true,
+          "subject_to_photo_map.csv": true
+        },
+        "image_directories": {
+          "mask": true,
+          "mask_left": true
+        }
+      },
+      "subject_id_alignment": {
+        "hwg_minus_measurements_count": 0,
+        "hwg_minus_measurements_examples": [],
+        "measurements_minus_hwg_count": 0,
+        "measurements_minus_hwg_examples": [],
+        "hwg_minus_photo_map_count": 0,
+        "hwg_minus_photo_map_examples": [],
+        "photo_map_minus_hwg_count": 0,
+        "photo_map_minus_hwg_examples": []
+      },
+      "photo_id_alignment": {
+        "mask": {
+          "photo_map_minus_mask_count": 0,
+          "photo_map_minus_mask_examples": [],
+          "mask_minus_photo_map_count": 0,
+          "mask_minus_photo_map_examples": []
+        },
+        "mask_left": {
+          "photo_map_minus_mask_left_count": 0,
+          "photo_map_minus_mask_left_examples": [],
+          "mask_left_minus_photo_map_count": 0,
+          "mask_left_minus_photo_map_examples": []
+        },
+        "mask_vs_mask_left": {
+          "mask_minus_mask_left_count": 0,
+          "mask_minus_mask_left_examples": [],
+          "mask_left_minus_mask_count": 0,
+          "mask_left_minus_mask_examples": []
+        }
+      },
+      "duplicates": {
+        "hwg_metadata.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "measurements.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "subject_to_photo_map.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "mask": {
+          "duplicate_basename_files": 0
+        },
+        "mask_left": {
+          "duplicate_basename_files": 0
+        }
+      }
+    },
+    "testB": {
+      "expected_artifacts_present": {
+        "csv_files": {
+          "hwg_metadata.csv": true,
+          "measurements.csv": true,
+          "subject_to_photo_map.csv": true
+        },
+        "image_directories": {
+          "mask": true,
+          "mask_left": true
+        }
+      },
+      "subject_id_alignment": {
+        "hwg_minus_measurements_count": 0,
+        "hwg_minus_measurements_examples": [],
+        "measurements_minus_hwg_count": 0,
+        "measurements_minus_hwg_examples": [],
+        "hwg_minus_photo_map_count": 0,
+        "hwg_minus_photo_map_examples": [],
+        "photo_map_minus_hwg_count": 0,
+        "photo_map_minus_hwg_examples": []
+      },
+      "photo_id_alignment": {
+        "mask": {
+          "photo_map_minus_mask_count": 0,
+          "photo_map_minus_mask_examples": [],
+          "mask_minus_photo_map_count": 0,
+          "mask_minus_photo_map_examples": []
+        },
+        "mask_left": {
+          "photo_map_minus_mask_left_count": 0,
+          "photo_map_minus_mask_left_examples": [],
+          "mask_left_minus_photo_map_count": 0,
+          "mask_left_minus_photo_map_examples": []
+        },
+        "mask_vs_mask_left": {
+          "mask_minus_mask_left_count": 0,
+          "mask_minus_mask_left_examples": [],
+          "mask_left_minus_mask_count": 0,
+          "mask_left_minus_mask_examples": []
+        }
+      },
+      "duplicates": {
+        "hwg_metadata.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "measurements.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "subject_to_photo_map.csv": {
+          "duplicate_subject_id_rows": 0,
+          "duplicate_photo_id_rows": 0,
+          "duplicate_subject_photo_rows": 0
+        },
+        "mask": {
+          "duplicate_basename_files": 0
+        },
+        "mask_left": {
+          "duplicate_basename_files": 0
+        }
+      }
+    }
+  },
+  "samples": {
+    "train": {
+      "csv_files": {
+        "hwg_metadata.csv": [
+          "train/hwg_metadata.csv"
+        ],
+        "measurements.csv": [
+          "train/measurements.csv"
+        ],
+        "subject_to_photo_map.csv": [
+          "train/subject_to_photo_map.csv"
+        ]
+      },
+      "image_directories": {
+        "mask": [
+          "train/mask/001f3a88501980a5eca6f6346a0ca8d9.png",
+          "train/mask/0023f967e5089c95ae22c43e25b2cef1.png"
+        ],
+        "mask_left": [
+          "train/mask_left/001f3a88501980a5eca6f6346a0ca8d9.png",
+          "train/mask_left/0023f967e5089c95ae22c43e25b2cef1.png"
+        ]
+      },
+      "image_dimensions": {
+        "mask": [
+          {
+            "file": "train/mask/001f3a88501980a5eca6f6346a0ca8d9.png",
+            "width": 720,
+            "height": 960
+          },
+          {
+            "file": "train/mask/0023f967e5089c95ae22c43e25b2cef1.png",
+            "width": 720,
+            "height": 960
+          }
+        ],
+        "mask_left": [
+          {
+            "file": "train/mask_left/001f3a88501980a5eca6f6346a0ca8d9.png",
+            "width": 720,
+            "height": 960
+          },
+          {
+            "file": "train/mask_left/0023f967e5089c95ae22c43e25b2cef1.png",
+            "width": 720,
+            "height": 960
+          }
+        ]
+      }
+    },
+    "testA": {
+      "csv_files": {
+        "hwg_metadata.csv": [
+          "testA/hwg_metadata.csv"
+        ],
+        "measurements.csv": [
+          "testA/measurements.csv"
+        ],
+        "subject_to_photo_map.csv": [
+          "testA/subject_to_photo_map.csv"
+        ]
+      },
+      "image_directories": {
+        "mask": [
+          "testA/mask/00112158c308d48307e95b841f678df8.png",
+          "testA/mask/0048f0d9a4d0ca697e31077bab7b2471.png"
+        ],
+        "mask_left": [
+          "testA/mask_left/00112158c308d48307e95b841f678df8.png",
+          "testA/mask_left/0048f0d9a4d0ca697e31077bab7b2471.png"
+        ]
+      },
+      "image_dimensions": {
+        "mask": [
+          {
+            "file": "testA/mask/00112158c308d48307e95b841f678df8.png",
+            "width": 720,
+            "height": 960
+          },
+          {
+            "file": "testA/mask/0048f0d9a4d0ca697e31077bab7b2471.png",
+            "width": 720,
+            "height": 960
+          }
+        ],
+        "mask_left": [
+          {
+            "file": "testA/mask_left/00112158c308d48307e95b841f678df8.png",
+            "width": 720,
+            "height": 960
+          },
+          {
+            "file": "testA/mask_left/0048f0d9a4d0ca697e31077bab7b2471.png",
+            "width": 720,
+            "height": 960
+          }
+        ]
+      }
+    },
+    "testB": {
+      "csv_files": {
+        "hwg_metadata.csv": [
+          "testB/hwg_metadata.csv"
+        ],
+        "measurements.csv": [
+          "testB/measurements.csv"
+        ],
+        "subject_to_photo_map.csv": [
+          "testB/subject_to_photo_map.csv"
+        ]
+      },
+      "image_directories": {
+        "mask": [
+          "testB/mask/003981667ee238d4fa02d98c7b77efcb.png",
+          "testB/mask/0188b0a27a2544b66186f051c478ff42.png"
+        ],
+        "mask_left": [
+          "testB/mask_left/003981667ee238d4fa02d98c7b77efcb.png",
+          "testB/mask_left/0188b0a27a2544b66186f051c478ff42.png"
+        ]
+      },
+      "image_dimensions": {
+        "mask": [
+          {
+            "file": "testB/mask/003981667ee238d4fa02d98c7b77efcb.png",
+            "width": 720,
+            "height": 960
+          },
+          {
+            "file": "testB/mask/0188b0a27a2544b66186f051c478ff42.png",
+            "width": 720,
+            "height": 960
+          }
+        ],
+        "mask_left": [
+          {
+            "file": "testB/mask_left/003981667ee238d4fa02d98c7b77efcb.png",
+            "width": 720,
+            "height": 960
+          },
+          {
+            "file": "testB/mask_left/0188b0a27a2544b66186f051c478ff42.png",
+            "width": 720,
+            "height": 960
+          }
+        ]
+      }
+    }
+  },
+  "warnings": []
+}

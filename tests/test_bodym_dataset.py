@@ -92,6 +92,11 @@ def test_dataset_paired_mode_returns_both_views_and_targets(
 
     assert dataset.view_names == ("mask", "mask_left")
     assert len(dataset.target_columns) == 14
+    assert sample["metadata"] == {
+        "hwg_gender": "female",
+        "hwg_height_cm": 160.0,
+        "hwg_weight_kg": 60.0,
+    }
     assert set(sample["views"].keys()) == {"mask", "mask_left"}
     assert sample["views"]["mask"].dtype == torch.float32
     assert tuple(sample["views"]["mask"].shape) == (1, 960, 720)
@@ -162,6 +167,11 @@ def test_dataloader_batch_collates_views_and_targets(
     )
     batch = next(iter(dataloader))
 
+    assert set(batch["metadata"].keys()) == {
+        "hwg_gender",
+        "hwg_height_cm",
+        "hwg_weight_kg",
+    }
     assert tuple(batch["views"]["mask"].shape) == (4, 1, 960, 720)
     assert tuple(batch["views"]["mask_left"].shape) == (4, 1, 960, 720)
     assert tuple(batch["targets"].shape) == (4, 14)
@@ -209,6 +219,11 @@ def test_real_local_assets_load_when_torchvision_is_available() -> None:
 
     assert dataset.view_names == ("mask", "mask_left")
     assert len(dataset.target_columns) == 14
+    assert set(sample["metadata"].keys()) == {
+        "hwg_gender",
+        "hwg_height_cm",
+        "hwg_weight_kg",
+    }
     assert tuple(sample["views"]["mask"].shape) == (1, 960, 720)
     assert tuple(sample["views"]["mask_left"].shape) == (1, 960, 720)
     assert tuple(sample["targets"].shape) == (14,)

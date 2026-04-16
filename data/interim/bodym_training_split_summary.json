@@ -1,0 +1,151 @@
+{
+  "manifest_path": "C:\\Users\\niket\\OneDrive\\Desktop\\Coding\\ML\\FitScanCV\\data\\interim\\bodym_manifest.csv",
+  "trainable_target_columns": [
+    "measurement_ankle",
+    "measurement_arm_length",
+    "measurement_bicep",
+    "measurement_calf",
+    "measurement_chest",
+    "measurement_forearm",
+    "measurement_height",
+    "measurement_hip",
+    "measurement_leg_length",
+    "measurement_shoulder_breadth",
+    "measurement_shoulder_to_crotch",
+    "measurement_thigh",
+    "measurement_waist",
+    "measurement_wrist"
+  ],
+  "target_summary": {
+    "measurement_ankle": {
+      "missing_count": 0,
+      "min": 18.998859405517578,
+      "max": 32.97746658325195
+    },
+    "measurement_arm_length": {
+      "missing_count": 0,
+      "min": 39.3863525390625,
+      "max": 60.15665054321289
+    },
+    "measurement_bicep": {
+      "missing_count": 0,
+      "min": 19.130897521972656,
+      "max": 55.81306076049805
+    },
+    "measurement_calf": {
+      "missing_count": 0,
+      "min": 28.26889991760254,
+      "max": 55.328609466552734
+    },
+    "measurement_chest": {
+      "missing_count": 0,
+      "min": 76.87409973144531,
+      "max": 158.0977325439453
+    },
+    "measurement_forearm": {
+      "missing_count": 0,
+      "min": 18.88115692138672,
+      "max": 39.74776077270508
+    },
+    "measurement_height": {
+      "missing_count": 0,
+      "min": 140.86045837402344,
+      "max": 198.4121856689453
+    },
+    "measurement_hip": {
+      "missing_count": 0,
+      "min": 80.67623138427734,
+      "max": 166.85157775878906
+    },
+    "measurement_leg_length": {
+      "missing_count": 0,
+      "min": 62.69871139526367,
+      "max": 96.37983703613281
+    },
+    "measurement_shoulder_breadth": {
+      "missing_count": 0,
+      "min": 28.62794303894043,
+      "max": 44.32252502441406
+    },
+    "measurement_shoulder_to_crotch": {
+      "missing_count": 0,
+      "min": 49.602840423583984,
+      "max": 79.31592559814453
+    },
+    "measurement_thigh": {
+      "missing_count": 0,
+      "min": 37.68911361694336,
+      "max": 84.22335815429688
+    },
+    "measurement_waist": {
+      "missing_count": 0,
+      "min": 61.85227584838867,
+      "max": 164.29653930664062
+    },
+    "measurement_wrist": {
+      "missing_count": 0,
+      "min": 13.09393310546875,
+      "max": 23.978992462158203
+    }
+  },
+  "source_manifest": {
+    "row_count": 8978,
+    "split_row_counts": {
+      "train": 6134,
+      "testA": 1684,
+      "testB": 1160
+    },
+    "split_subject_counts": {
+      "testA": 87,
+      "testB": 400,
+      "train": 2018
+    }
+  },
+  "source_train": {
+    "row_count": 6134,
+    "subject_count": 2018,
+    "gender_counts": {
+      "female": 800,
+      "male": 1218
+    }
+  },
+  "split_config": {
+    "subject_column": "subject_key",
+    "source_split_filter": "train",
+    "val_size": 0.1,
+    "random_state": 42,
+    "stratified": true,
+    "stratify_column": "hwg_gender",
+    "validation_subject_count": 202,
+    "training_subject_count": 1816,
+    "source_subject_count": 2018
+  },
+  "outputs": {
+    "train": {
+      "row_count": 5576,
+      "subject_count": 1816,
+      "gender_counts": {
+        "female": 720,
+        "male": 1096
+      }
+    },
+    "val": {
+      "row_count": 558,
+      "subject_count": 202,
+      "gender_counts": {
+        "male": 122,
+        "female": 80
+      }
+    }
+  },
+  "holdouts": {
+    "testA": {
+      "row_count": 1684,
+      "subject_count": 87
+    },
+    "testB": {
+      "row_count": 1160,
+      "subject_count": 400
+    }
+  }
+}
