@@ -1,0 +1,33 @@
+data:
+  train_manifest_path: data/interim/bodym_training_train.csv
+  val_manifest_path: data/interim/bodym_training_val.csv
+  train_split: train
+  val_split: val
+  view_mode: paired
+  batch_size: 8
+  num_workers: 0
+  pin_memory: false
+  resize: null
+
+model:
+  variant: dual_view_late_fusion
+  num_targets: 14
+  single_view_name: mask
+  image_embedding_dim: 128
+  metadata_embedding_dim: 32
+  hidden_dim: 128
+  dropout: 0.1
+
+training:
+  epochs: 5
+  seed: 42
+  device: auto
+  optimizer_name: adam
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  loss_name: smooth_l1
+  log_every_n_steps: 50
+
+output:
+  run_dir: outputs/bodym_baseline
+  save_predictions_on_eval: false
