@@ -52,6 +52,9 @@ class BodyMDataConfig:
     num_workers: int = 0
     pin_memory: bool = False
     resize: tuple[int, int] | None = None
+    resize_mode: Literal["nearest", "bilinear"] = "nearest"
+    normalize_mean: float | None = None
+    normalize_std: float | None = None
 
     def __post_init__(self) -> None:
         if not self.train_split:
@@ -66,6 +69,14 @@ class BodyMDataConfig:
             raise ValueError("num_workers must be zero or greater.")
         if self.resize is not None and len(self.resize) != 2:
             raise ValueError("resize must be null or a [height, width] pair.")
+        if self.resize_mode not in ("nearest", "bilinear"):
+            raise ValueError("resize_mode must be 'nearest' or 'bilinear'.")
+        if (self.normalize_mean is None) != (self.normalize_std is None):
+            raise ValueError(
+                "normalize_mean and normalize_std must either both be set or both be null."
+            )
+        if self.normalize_std is not None and self.normalize_std <= 0.0:
+            raise ValueError("normalize_std must be greater than zero.")
 
 
 @dataclass(frozen=True)
@@ -126,6 +137,12 @@ def _normalize_resize(value: Any) -> tuple[int, int] | None:
     return int(height), int(width)
 
 
+def _normalize_optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    return float(value)
+
+
 def _require_section(raw_config: dict[str, Any], key: str) -> dict[str, Any]:
     section = raw_config.get(key)
     if not isinstance(section, dict):
@@ -181,6 +198,9 @@ def load_experiment_config(
         num_workers=int(data_section.get("num_workers", 0)),
         pin_memory=bool(data_section.get("pin_memory", False)),
         resize=_normalize_resize(data_section.get("resize")),
+        resize_mode=str(data_section.get("resize_mode", "nearest")),  # type: ignore[arg-type]
+        normalize_mean=_normalize_optional_float(data_section.get("normalize_mean")),
+        normalize_std=_normalize_optional_float(data_section.get("normalize_std")),
     )
     model_config = BodyMModelConfig(**model_section)
     training_config = BodyMTrainingConfig(
@@ -225,6 +245,9 @@ def experiment_config_to_dict(config: BodyMExperimentConfig) -> dict[str, Any]:
             "num_workers": config.data.num_workers,
             "pin_memory": config.data.pin_memory,
             "resize": list(config.data.resize) if config.data.resize is not None else None,
+            "resize_mode": config.data.resize_mode,
+            "normalize_mean": config.data.normalize_mean,
+            "normalize_std": config.data.normalize_std,
         },
         "model": asdict(config.model),
         "training": asdict(config.training),
@@ -277,11 +300,21 @@ def resolve_device(device_name: str) -> torch.device:
 def build_dataloaders(
     config: BodyMExperimentConfig,
 ) -> tuple[DataLoader[dict[str, Any]], DataLoader[dict[str, Any]]]:
-    transform = (
-        build_bodym_transform(BodyMTransformConfig(resize=config.data.resize))
-        if config.data.resize is not None
-        else None
-    )
+    if (
+        config.data.resize is not None
+        or config.data.normalize_mean is not None
+        or config.data.normalize_std is not None
+    ):
+        transform = build_bodym_transform(
+            BodyMTransformConfig(
+                resize=config.data.resize,
+                resize_mode=config.data.resize_mode,
+                normalize_mean=config.data.normalize_mean,
+                normalize_std=config.data.normalize_std,
+            )
+        )
+    else:
+        transform = None
     train_loader = create_bodym_dataloader(
         manifest_path=config.data.train_manifest_path,
         split=config.data.train_split,
@@ -684,11 +717,21 @@ def evaluate_checkpoint(
     )
     resolved_split = split_override or config.data.val_split
 
-    transform = (
-        build_bodym_transform(BodyMTransformConfig(resize=config.data.resize))
-        if config.data.resize is not None
-        else None
-    )
+    if (
+        config.data.resize is not None
+        or config.data.normalize_mean is not None
+        or config.data.normalize_std is not None
+    ):
+        transform = build_bodym_transform(
+            BodyMTransformConfig(
+                resize=config.data.resize,
+                resize_mode=config.data.resize_mode,
+                normalize_mean=config.data.normalize_mean,
+                normalize_std=config.data.normalize_std,
+            )
+        )
+    else:
+        transform = None
     dataloader = create_bodym_dataloader(
         manifest_path=resolved_manifest_path,
         split=resolved_split,
@@ -702,7 +745,10 @@ def evaluate_checkpoint(
     if dataloader.dataset.target_columns != target_names:
         raise TrainingPipelineError("Evaluation dataloader target columns do not match the checkpoint.")
 
-    model = build_bodym_model(checkpoint_model_config).to(device)
+    model = build_bodym_model(
+        checkpoint_model_config,
+        initialize_pretrained=False,
+    ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     loss_fn = build_regression_loss(config.training.loss_name)
     metrics = evaluate_model(

@@ -21,6 +21,7 @@ from scripts.models.bodym_models import (
     BodyMModelConfig,
     DualViewLateFusionBodyMRegressor,
     SingleViewBodyMRegressor,
+    _adapt_resnet18_first_conv,
     build_bodym_model,
     build_regression_loss,
 )
@@ -129,14 +130,63 @@ def test_dual_view_late_fusion_model_forward_shape() -> None:
     assert tuple(predictions.shape) == (2, 14)
 
 
+def test_dual_view_resnet18_forward_shape() -> None:
+    pytest.importorskip("torchvision")
+
+    config = BodyMModelConfig(
+        variant="dual_view_late_fusion",
+        backbone_name="resnet18",
+        pretrained=False,
+        image_embedding_dim=64,
+        metadata_embedding_dim=16,
+        hidden_dim=32,
+    )
+    model = build_bodym_model(config)
+    mask = torch.ones((2, 1, 64, 64), dtype=torch.float32)
+    mask_left = torch.ones((2, 1, 64, 64), dtype=torch.float32)
+    metadata = make_metadata_batch(batch_size=2)
+
+    predictions = model(mask, mask_left, metadata)
+
+    assert isinstance(model, DualViewLateFusionBodyMRegressor)
+    assert predictions.dtype == torch.float32
+    assert tuple(predictions.shape) == (2, 14)
+
+
 def test_invalid_variant_errors_clearly() -> None:
     with pytest.raises(ValueError, match="variant"):
         BodyMModelConfig(variant="ensemble")  # type: ignore[arg-type]
 
 
+def test_invalid_backbone_name_errors_clearly() -> None:
+    with pytest.raises(ValueError, match="backbone_name"):
+        BodyMModelConfig(backbone_name="vit")  # type: ignore[arg-type]
+
+
 def test_invalid_single_view_name_errors_clearly() -> None:
     with pytest.raises(ValueError, match="single_view_name"):
         BodyMModelConfig(single_view_name="front")  # type: ignore[arg-type]
+
+
+def test_resnet18_first_conv_adaptation_preserves_repeated_rgb_activation_scale() -> None:
+    class DummyBackbone(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.conv1 = torch.nn.Conv2d(3, 4, kernel_size=3, stride=1, padding=1, bias=False)
+
+    backbone = DummyBackbone()
+    original_weight = torch.arange(
+        backbone.conv1.weight.numel(),
+        dtype=torch.float32,
+    ).reshape_as(backbone.conv1.weight)
+    with torch.no_grad():
+        backbone.conv1.weight.copy_(original_weight)
+
+    _adapt_resnet18_first_conv(backbone, pretrained=True)
+
+    assert backbone.conv1.in_channels == 1
+    expected_weight = original_weight.sum(dim=1, keepdim=True)
+    assert torch.allclose(backbone.conv1.weight, expected_weight)
 
 
 def test_unknown_hwg_gender_raises_value_error() -> None:

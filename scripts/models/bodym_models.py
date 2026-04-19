@@ -11,9 +11,11 @@ except ImportError as exc:
 
 ModelVariant = Literal["single_view", "dual_view_late_fusion"]
 SingleViewName = Literal["mask", "mask_left"]
+BackboneName = Literal["light_cnn", "resnet18"]
 
 VALID_MODEL_VARIANTS: tuple[str, ...] = ("single_view", "dual_view_late_fusion")
 VALID_SINGLE_VIEW_NAMES: tuple[str, ...] = ("mask", "mask_left")
+VALID_BACKBONE_NAMES: tuple[str, ...] = ("light_cnn", "resnet18")
 GENDER_TO_VALUE: dict[str, float] = {
     "female": 0.0,
     "male": 1.0,
@@ -22,11 +24,13 @@ GENDER_TO_VALUE: dict[str, float] = {
 
 @dataclass(frozen=True)
 class BodyMModelConfig:
-    """Configuration for baseline BodyM regression models."""
+    """Configuration for baseline and stronger BodyM regression models."""
 
     variant: ModelVariant = "single_view"
     num_targets: int = 14
     single_view_name: SingleViewName = "mask"
+    backbone_name: BackboneName = "light_cnn"
+    pretrained: bool = False
     image_embedding_dim: int = 128
     metadata_embedding_dim: int = 32
     hidden_dim: int = 128
@@ -42,6 +46,13 @@ class BodyMModelConfig:
                 f"single_view_name must be one of {VALID_SINGLE_VIEW_NAMES}, "
                 f"received: {self.single_view_name!r}"
             )
+        if self.backbone_name not in VALID_BACKBONE_NAMES:
+            raise ValueError(
+                f"backbone_name must be one of {VALID_BACKBONE_NAMES}, "
+                f"received: {self.backbone_name!r}"
+            )
+        if self.pretrained and self.backbone_name != "resnet18":
+            raise ValueError("pretrained=True is only supported for backbone_name='resnet18'.")
         if self.num_targets <= 0:
             raise ValueError("num_targets must be a positive integer.")
         if self.image_embedding_dim <= 0:
@@ -168,6 +179,91 @@ class _GrayscaleCnnEncoder(nn.Module):
         return self.projection(encoded)
 
 
+def _create_resnet18_backbone(pretrained: bool) -> nn.Module:
+    try:
+        from torchvision.models import ResNet18_Weights, resnet18
+    except ImportError as exc:
+        raise ImportError(
+            "torchvision is required to use backbone_name='resnet18'."
+        ) from exc
+
+    weights = ResNet18_Weights.DEFAULT if pretrained else None
+    try:
+        return resnet18(weights=weights)
+    except Exception as exc:  # pragma: no cover - defensive wrapper for download/runtime issues
+        raise RuntimeError(
+            "Failed to initialize torchvision resnet18. "
+            "If pretrained=True, ensure the weights are available or internet access is enabled."
+        ) from exc
+
+
+def _adapt_resnet18_first_conv(backbone: nn.Module, pretrained: bool) -> None:
+    old_conv = getattr(backbone, "conv1", None)
+    if not isinstance(old_conv, nn.Conv2d):
+        raise TypeError("Expected a backbone with a Conv2d 'conv1' layer.")
+
+    new_conv = nn.Conv2d(
+        in_channels=1,
+        out_channels=old_conv.out_channels,
+        kernel_size=old_conv.kernel_size,
+        stride=old_conv.stride,
+        padding=old_conv.padding,
+        dilation=old_conv.dilation,
+        groups=old_conv.groups,
+        bias=old_conv.bias is not None,
+        padding_mode=old_conv.padding_mode,
+    )
+
+    with torch.no_grad():
+        if pretrained:
+            # Preserve the activation scale that the pretrained backbone expects:
+            # duplicating one grayscale mask into three RGB channels is equivalent
+            # to summing the pretrained RGB kernels across the input-channel axis.
+            new_conv.weight.copy_(old_conv.weight.sum(dim=1, keepdim=True))
+            if old_conv.bias is not None and new_conv.bias is not None:
+                new_conv.bias.copy_(old_conv.bias)
+        else:
+            nn.init.kaiming_normal_(new_conv.weight, mode="fan_out", nonlinearity="relu")
+            if new_conv.bias is not None:
+                nn.init.zeros_(new_conv.bias)
+
+    backbone.conv1 = new_conv
+
+
+class _ResNet18Encoder(nn.Module):
+    """ResNet18-based grayscale encoder for stronger paired-view modeling."""
+
+    def __init__(self, embedding_dim: int, pretrained: bool) -> None:
+        super().__init__()
+        backbone = _create_resnet18_backbone(pretrained=pretrained)
+        _adapt_resnet18_first_conv(backbone, pretrained=pretrained)
+        in_features = int(backbone.fc.in_features)
+        backbone.fc = nn.Identity()
+        self.backbone = backbone
+        self.projection = nn.Sequential(
+            nn.Linear(in_features, embedding_dim),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, view: Tensor) -> Tensor:
+        encoded = self.backbone(view)
+        return self.projection(encoded)
+
+
+def _build_image_encoder(
+    backbone_name: BackboneName,
+    embedding_dim: int,
+    pretrained: bool,
+) -> nn.Module:
+    if backbone_name == "light_cnn":
+        return _GrayscaleCnnEncoder(embedding_dim)
+    if backbone_name == "resnet18":
+        return _ResNet18Encoder(embedding_dim=embedding_dim, pretrained=pretrained)
+    raise ValueError(
+        f"Unsupported backbone_name: {backbone_name!r}. Expected one of {VALID_BACKBONE_NAMES}."
+    )
+
+
 class _MetadataEncoder(nn.Module):
     """Small MLP for HWG metadata fusion."""
 
@@ -208,9 +304,9 @@ class _RegressionHead(nn.Module):
 
 
 class SingleViewBodyMRegressor(nn.Module):
-    """Baseline single-view regressor with HWG metadata fusion."""
+    """Single-view regressor with configurable image backbone and HWG fusion."""
 
-    def __init__(self, config: BodyMModelConfig) -> None:
+    def __init__(self, config: BodyMModelConfig, initialize_pretrained: bool | None = None) -> None:
         super().__init__()
         if config.variant != "single_view":
             raise ValueError(
@@ -219,7 +315,11 @@ class SingleViewBodyMRegressor(nn.Module):
 
         self.config = config
         self.single_view_name = config.single_view_name
-        self.image_encoder = _GrayscaleCnnEncoder(config.image_embedding_dim)
+        self.image_encoder = _build_image_encoder(
+            backbone_name=config.backbone_name,
+            embedding_dim=config.image_embedding_dim,
+            pretrained=config.pretrained if initialize_pretrained is None else initialize_pretrained,
+        )
         self.metadata_encoder = _MetadataEncoder(config.metadata_embedding_dim)
         self.regression_head = _RegressionHead(
             input_dim=config.image_embedding_dim + config.metadata_embedding_dim,
@@ -244,7 +344,7 @@ class SingleViewBodyMRegressor(nn.Module):
 class DualViewLateFusionBodyMRegressor(nn.Module):
     """Late-fusion regressor over paired mask and mask_left views."""
 
-    def __init__(self, config: BodyMModelConfig) -> None:
+    def __init__(self, config: BodyMModelConfig, initialize_pretrained: bool | None = None) -> None:
         super().__init__()
         if config.variant != "dual_view_late_fusion":
             raise ValueError(
@@ -253,7 +353,11 @@ class DualViewLateFusionBodyMRegressor(nn.Module):
             )
 
         self.config = config
-        self.image_encoder = _GrayscaleCnnEncoder(config.image_embedding_dim)
+        self.image_encoder = _build_image_encoder(
+            backbone_name=config.backbone_name,
+            embedding_dim=config.image_embedding_dim,
+            pretrained=config.pretrained if initialize_pretrained is None else initialize_pretrained,
+        )
         self.metadata_encoder = _MetadataEncoder(config.metadata_embedding_dim)
         self.regression_head = _RegressionHead(
             input_dim=(config.image_embedding_dim * 2) + config.metadata_embedding_dim,
@@ -280,11 +384,17 @@ class DualViewLateFusionBodyMRegressor(nn.Module):
         return self.regression_head(fused)
 
 
-def build_bodym_model(config: BodyMModelConfig) -> nn.Module:
+def build_bodym_model(
+    config: BodyMModelConfig,
+    initialize_pretrained: bool | None = None,
+) -> nn.Module:
     if config.variant == "single_view":
-        return SingleViewBodyMRegressor(config)
+        return SingleViewBodyMRegressor(config, initialize_pretrained=initialize_pretrained)
     if config.variant == "dual_view_late_fusion":
-        return DualViewLateFusionBodyMRegressor(config)
+        return DualViewLateFusionBodyMRegressor(
+            config,
+            initialize_pretrained=initialize_pretrained,
+        )
     raise ValueError(
         f"Unsupported model variant: {config.variant!r}. "
         f"Expected one of {VALID_MODEL_VARIANTS}."
@@ -301,6 +411,7 @@ def build_regression_loss(name: str = "smooth_l1") -> nn.Module:
 
 
 __all__ = [
+    "BackboneName",
     "BodyMModelConfig",
     "DualViewLateFusionBodyMRegressor",
     "ModelVariant",

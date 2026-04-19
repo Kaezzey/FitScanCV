@@ -21,6 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MANIFEST_PATH = Path("data/interim/bodym_manifest.csv")
 ViewMode = Literal["paired", "mask", "mask_left"]
 TensorTransform = Callable[[Tensor], Tensor]
+ResizeMode = Literal["nearest", "bilinear"]
 
 MANIFEST_BASE_COLUMNS: tuple[str, ...] = (
     "split",
@@ -78,15 +79,29 @@ class BodyMTransformConfig:
     """Configuration for deterministic mask preprocessing."""
 
     resize: tuple[int, int] | None = None
+    resize_mode: ResizeMode = "nearest"
+    normalize_mean: float | None = None
+    normalize_std: float | None = None
 
     def __post_init__(self) -> None:
         if self.resize is None:
-            return
-        if len(self.resize) != 2:
-            raise ValueError("resize must be a (height, width) tuple.")
-        height, width = self.resize
-        if height <= 0 or width <= 0:
-            raise ValueError("resize values must be positive integers.")
+            pass
+        else:
+            if len(self.resize) != 2:
+                raise ValueError("resize must be a (height, width) tuple.")
+            height, width = self.resize
+            if height <= 0 or width <= 0:
+                raise ValueError("resize values must be positive integers.")
+
+        if self.resize_mode not in ("nearest", "bilinear"):
+            raise ValueError("resize_mode must be 'nearest' or 'bilinear'.")
+
+        if (self.normalize_mean is None) != (self.normalize_std is None):
+            raise ValueError(
+                "normalize_mean and normalize_std must either both be set or both be null."
+            )
+        if self.normalize_std is not None and self.normalize_std <= 0.0:
+            raise ValueError("normalize_std must be greater than zero.")
 
 
 def build_bodym_transform(
@@ -107,11 +122,22 @@ def build_bodym_transform(
             )
 
         if resolved_config.resize is not None:
+            interpolate_kwargs: dict[str, Any] = {
+                "size": resolved_config.resize,
+                "mode": resolved_config.resize_mode,
+            }
+            if resolved_config.resize_mode == "bilinear":
+                interpolate_kwargs["align_corners"] = False
+                interpolate_kwargs["antialias"] = True
             output = torch_f.interpolate(
                 output.unsqueeze(0),
-                size=resolved_config.resize,
-                mode="nearest",
+                **interpolate_kwargs,
             ).squeeze(0)
+
+        if resolved_config.normalize_mean is not None:
+            output = (
+                output - float(resolved_config.normalize_mean)
+            ) / float(resolved_config.normalize_std)
 
         return output.contiguous()
 

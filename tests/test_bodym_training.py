@@ -95,8 +95,13 @@ def write_config(
     model_variant: str,
     view_mode: str,
     single_view_name: str = "mask",
+    backbone_name: str = "light_cnn",
+    pretrained: bool = False,
     epochs: int = 1,
     resize: list[int] | None = None,
+    resize_mode: str = "nearest",
+    normalize_mean: float | None = None,
+    normalize_std: float | None = None,
     save_predictions_on_eval: bool = False,
 ) -> Path:
     config = {
@@ -110,11 +115,16 @@ def write_config(
             "num_workers": 0,
             "pin_memory": False,
             "resize": resize,
+            "resize_mode": resize_mode,
+            "normalize_mean": normalize_mean,
+            "normalize_std": normalize_std,
         },
         "model": {
             "variant": model_variant,
             "num_targets": 14,
             "single_view_name": single_view_name,
+            "backbone_name": backbone_name,
+            "pretrained": pretrained,
             "image_embedding_dim": 64,
             "metadata_embedding_dim": 16,
             "hidden_dim": 64,
@@ -159,7 +169,9 @@ def test_load_experiment_config_maps_yaml_sections() -> None:
         assert config.data.train_manifest_path == train_manifest.resolve()
         assert config.data.val_manifest_path == val_manifest.resolve()
         assert config.data.view_mode == "paired"
+        assert config.data.resize_mode == "nearest"
         assert config.model.variant == "dual_view_late_fusion"
+        assert config.model.backbone_name == "light_cnn"
         assert config.training.epochs == 1
         assert config.output.run_dir == (tmp_path / "run").resolve()
 
@@ -179,10 +191,11 @@ def test_evaluate_cli_defaults_to_baseline_config() -> None:
 
 
 @pytest.mark.parametrize(
-    ("model_variant", "view_mode", "single_view_name"),
+    ("model_variant", "view_mode", "single_view_name", "backbone_name", "pretrained", "resize"),
     [
-        ("single_view", "mask", "mask"),
-        ("dual_view_late_fusion", "paired", "mask"),
+        ("single_view", "mask", "mask", "light_cnn", False, None),
+        ("dual_view_late_fusion", "paired", "mask", "light_cnn", False, None),
+        ("dual_view_late_fusion", "paired", "mask", "resnet18", False, [64, 64]),
     ],
 )
 def test_one_train_step_runs_for_both_variants(
@@ -190,8 +203,13 @@ def test_one_train_step_runs_for_both_variants(
     model_variant: str,
     view_mode: str,
     single_view_name: str,
+    backbone_name: str,
+    pretrained: bool,
+    resize: list[int] | None,
 ) -> None:
     with scratch_dir() as tmp_path:
+        if backbone_name == "resnet18":
+            pytest.importorskip("torchvision")
         train_manifest = write_manifest(tmp_path / "train.csv", "train", rows=4)
         val_manifest = write_manifest(tmp_path / "val.csv", "val", rows=2, start_index=100)
         config_path = write_config(
@@ -202,6 +220,9 @@ def test_one_train_step_runs_for_both_variants(
             model_variant=model_variant,
             view_mode=view_mode,
             single_view_name=single_view_name,
+            backbone_name=backbone_name,
+            pretrained=pretrained,
+            resize=resize,
         )
         monkeypatch.setattr(bodym_dataset, "_read_grayscale_image", fake_image_tensor)
 
@@ -257,6 +278,7 @@ def test_evaluate_checkpoint_reloads_saved_model_and_reports_metrics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with scratch_dir() as tmp_path:
+        pytest.importorskip("torchvision")
         train_manifest = write_manifest(tmp_path / "train.csv", "train", rows=4)
         val_manifest = write_manifest(tmp_path / "val.csv", "val", rows=2, start_index=100)
         config_path = write_config(
@@ -266,7 +288,13 @@ def test_evaluate_checkpoint_reloads_saved_model_and_reports_metrics(
             run_dir=tmp_path / "run",
             model_variant="dual_view_late_fusion",
             view_mode="paired",
+            backbone_name="resnet18",
+            pretrained=False,
             epochs=1,
+            resize=[64, 64],
+            resize_mode="bilinear",
+            normalize_mean=0.449,
+            normalize_std=0.226,
             save_predictions_on_eval=True,
         )
         monkeypatch.setattr(bodym_dataset, "_read_grayscale_image", fake_image_tensor)

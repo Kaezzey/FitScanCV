@@ -4,32 +4,35 @@ data:
   train_split: train
   val_split: val
   view_mode: paired
-  batch_size: 8
+  batch_size: 4
   num_workers: 0
   pin_memory: false
-  resize: null
+  resize: [224, 224]
+  resize_mode: bilinear
+  normalize_mean: 0.449
+  normalize_std: 0.226
 
 model:
   variant: dual_view_late_fusion
-  backbone_name: light_cnn
-  pretrained: false
+  backbone_name: resnet18
+  pretrained: true
   num_targets: 14
   single_view_name: mask
-  image_embedding_dim: 128
-  metadata_embedding_dim: 32
-  hidden_dim: 128
-  dropout: 0.1
+  image_embedding_dim: 256
+  metadata_embedding_dim: 64
+  hidden_dim: 256
+  dropout: 0.2
 
 training:
-  epochs: 5
+  epochs: 8
   seed: 42
   device: auto
   optimizer_name: adam
-  learning_rate: 0.001
-  weight_decay: 0.0001
+  learning_rate: 0.00015
+  weight_decay: 0.00005
   loss_name: smooth_l1
   log_every_n_steps: 50
 
 output:
-  run_dir: outputs/bodym_baseline
+  run_dir: outputs/bodym_resnet18
   save_predictions_on_eval: false
