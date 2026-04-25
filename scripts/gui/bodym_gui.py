@@ -2,11 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 import queue
 import threading
 import tkinter as tk
 from tkinter import ttk
 from typing import Any
+
+# Ensure top-level repo is on sys.path so `import scripts.*` works
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 try:
     import pandas as pd
@@ -14,7 +20,7 @@ except ImportError as exc:
     raise ImportError("pandas is required to use scripts.gui.bodym_gui.") from exc
 
 try:
-    from PIL import Image, ImageOps, ImageTk
+    from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageTk
 except ImportError as exc:
     raise ImportError("Pillow is required to use scripts.gui.bodym_gui.") from exc
 
@@ -37,6 +43,32 @@ DATA_SPLIT_ORDER: tuple[str, ...] = ("val", "testA", "testB")
 EXPLORER_REQUIRED_COLUMNS: tuple[str, ...] = (
     MANIFEST_BASE_COLUMNS + MANIFEST_HWG_COLUMNS + MANIFEST_MEASUREMENT_COLUMNS
 )
+GENX_SOFT_CLUB_THEME: dict[str, Any] = {
+    "title": "FitScanCV // BodyM Accuracy Explorer",
+    "brand_title": "FITSCAN CV",
+    "brand_subtitle": "Body Measurement Vision // Validation + Holdout Workbench",
+    "background": "#dff2fb",
+    "panel": "#f7fcff",
+    "panel_alt": "#edf8ff",
+    "panel_deep": "#d7eefb",
+    "glass_highlight": "#ffffff",
+    "glass_shadow": "#c6e5f2",
+    "border": "#a9d5eb",
+    "accent": "#7bd7ff",
+    "accent_soft": "#ccf4ff",
+    "accent_deep": "#2d7fa8",
+    "divider": "#90defb",
+    "text_primary": "#12334a",
+    "text_muted": "#54788f",
+    "text_inverse": "#f7fdff",
+    "preview_background": "#e7f5fd",
+    "preview_placeholder": "#8db6ca",
+    "hero_background": "#d8eef8",
+    "hero_glow": "#fbffff",
+    "hero_band": "#caefff",
+    "hero_outline": "#a6dff6",
+    "hero_microcopy": "#5f8fa6",
+}
 
 
 class BodyMExplorerError(RuntimeError):
@@ -449,10 +481,13 @@ class BodyMAccuracyExplorerApp:
         self.root = root
         self.controller = controller
         self.preview_size = preview_size
+        self.theme = GENX_SOFT_CLUB_THEME
+        self.style = ttk.Style(self.root)
         self._prediction_queue: queue.Queue[tuple[int, str, BodyMSamplePredictionResult | None, Exception | None]] = queue.Queue()
         self._prediction_request_id = 0
         self._mask_photo_image: ImageTk.PhotoImage | None = None
         self._mask_left_photo_image: ImageTk.PhotoImage | None = None
+        self._hero_photo_image: ImageTk.PhotoImage | None = None
         self._is_closed = False
 
         self.split_var = tk.StringVar(value=self.controller.split_filter)
@@ -460,6 +495,8 @@ class BodyMAccuracyExplorerApp:
         self.jump_var = tk.StringVar(value="")
         self.summary_var = tk.StringVar(value="Select a sample to inspect predictions.")
         self.status_var = tk.StringVar(value="")
+        self.browser_microcopy_var = tk.StringVar(value="")
+        self.console_microcopy_var = tk.StringVar(value="")
         self.detail_vars = {
             "split": tk.StringVar(value=""),
             "subject_id": tk.StringVar(value=""),
@@ -471,6 +508,7 @@ class BodyMAccuracyExplorerApp:
         }
         self._status_message = "Ready"
 
+        self._configure_theme()
         self._build_ui()
         self._populate_row_tree()
         self._render_current_row()
@@ -544,67 +582,301 @@ class BodyMAccuracyExplorerApp:
         self._is_closed = True
         self.root.destroy()
 
+    def _configure_theme(self) -> None:
+        try:
+            self.style.theme_use("clam")
+        except tk.TclError:
+            pass
+
+        self.root.configure(bg=self.theme["background"])
+        self.root.option_add("*Font", "{Segoe UI} 10")
+
+        self.style.configure(
+            "GenX.Root.TFrame",
+            background=self.theme["background"],
+        )
+        self.style.configure(
+            "GenX.Panel.TFrame",
+            background=self.theme["panel"],
+        )
+        self.style.configure(
+            "GenX.PanelAlt.TFrame",
+            background=self.theme["panel_alt"],
+        )
+        self.style.configure(
+            "GenX.Hero.TFrame",
+            background=self.theme["panel"],
+        )
+        self.style.configure(
+            "GenX.TLabel",
+            background=self.theme["panel"],
+            foreground=self.theme["text_primary"],
+        )
+        self.style.configure(
+            "GenX.Root.TLabel",
+            background=self.theme["background"],
+            foreground=self.theme["text_primary"],
+        )
+        self.style.configure(
+            "GenX.Brand.TLabel",
+            background=self.theme["background"],
+            foreground=self.theme["text_primary"],
+            font=("Segoe UI Semibold", 24),
+        )
+        self.style.configure(
+            "GenX.Subtitle.TLabel",
+            background=self.theme["background"],
+            foreground=self.theme["text_muted"],
+            font=("Consolas", 10, "italic"),
+        )
+        self.style.configure(
+            "GenX.Meta.TLabel",
+            background=self.theme["panel"],
+            foreground=self.theme["text_muted"],
+            font=("Segoe UI", 9),
+        )
+        self.style.configure(
+            "GenX.Summary.TLabel",
+            background=self.theme["panel"],
+            foreground=self.theme["accent_deep"],
+            font=("Segoe UI Semibold", 10),
+        )
+        self.style.configure(
+            "GenX.Console.TLabel",
+            background=self.theme["panel_alt"],
+            foreground=self.theme["hero_microcopy"],
+            font=("Consolas", 9),
+        )
+        self.style.configure(
+            "GenX.RootConsole.TLabel",
+            background=self.theme["background"],
+            foreground=self.theme["hero_microcopy"],
+            font=("Consolas", 9),
+        )
+        self.style.configure(
+            "GenX.TButton",
+            background=self.theme["panel"],
+            foreground=self.theme["text_primary"],
+            borderwidth=1,
+            focusthickness=0,
+            focuscolor=self.theme["accent_soft"],
+            padding=(10, 6),
+        )
+        self.style.map(
+            "GenX.TButton",
+            background=[
+                ("pressed", self.theme["accent"]),
+                ("active", self.theme["accent_soft"]),
+            ],
+            foreground=[
+                ("pressed", self.theme["text_primary"]),
+                ("active", self.theme["text_primary"]),
+            ],
+        )
+        self.style.configure(
+            "GenX.TEntry",
+            fieldbackground=self.theme["panel"],
+            foreground=self.theme["text_primary"],
+            bordercolor=self.theme["border"],
+            lightcolor=self.theme["accent_soft"],
+            darkcolor=self.theme["border"],
+            insertcolor=self.theme["accent_deep"],
+            padding=(8, 6),
+        )
+        self.style.configure(
+            "GenX.TCombobox",
+            fieldbackground=self.theme["panel"],
+            foreground=self.theme["text_primary"],
+            bordercolor=self.theme["border"],
+            arrowcolor=self.theme["accent_deep"],
+            selectbackground=self.theme["accent_soft"],
+            selectforeground=self.theme["text_primary"],
+            padding=(6, 4),
+        )
+        self.style.map(
+            "GenX.TCombobox",
+            fieldbackground=[("readonly", self.theme["panel"])],
+            selectbackground=[("readonly", self.theme["accent_soft"])],
+            selectforeground=[("readonly", self.theme["text_primary"])],
+        )
+        self.style.configure(
+            "GenX.TLabelframe",
+            background=self.theme["panel"],
+            bordercolor=self.theme["border"],
+            relief="solid",
+            borderwidth=1,
+        )
+        self.style.configure(
+            "GenX.TLabelframe.Label",
+            background=self.theme["panel"],
+            foreground=self.theme["accent_deep"],
+            font=("Segoe UI Semibold", 10),
+        )
+        self.style.configure(
+            "GenX.Treeview",
+            background=self.theme["panel"],
+            fieldbackground=self.theme["panel"],
+            foreground=self.theme["text_primary"],
+            bordercolor=self.theme["border"],
+            lightcolor=self.theme["panel"],
+            darkcolor=self.theme["panel"],
+            rowheight=28,
+        )
+        self.style.map(
+            "GenX.Treeview",
+            background=[("selected", self.theme["accent_soft"])],
+            foreground=[("selected", self.theme["text_primary"])],
+        )
+        self.style.configure(
+            "GenX.Treeview.Heading",
+            background=self.theme["panel_deep"],
+            foreground=self.theme["text_primary"],
+            relief="flat",
+            font=("Segoe UI Semibold", 9),
+        )
+        self.style.map(
+            "GenX.Treeview.Heading",
+            background=[("active", self.theme["accent_soft"])],
+        )
+        self.style.configure(
+            "GenX.Status.TLabel",
+            background=self.theme["panel_deep"],
+            foreground=self.theme["text_primary"],
+            font=("Consolas", 9),
+            padding=(10, 6),
+        )
+        self.style.configure(
+            "GenX.TPanedwindow",
+            background=self.theme["background"],
+        )
+        self.style.configure(
+            "GenX.Vertical.TScrollbar",
+            background=self.theme["panel_deep"],
+            troughcolor=self.theme["panel_alt"],
+            bordercolor=self.theme["border"],
+            arrowcolor=self.theme["accent_deep"],
+        )
+
     def _build_ui(self) -> None:
-        self.root.title("BodyM Accuracy Explorer")
+        self.root.title(self.theme["title"])
         self.root.geometry("1680x960")
         self.root.minsize(1320, 760)
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=1)
 
-        top_controls = ttk.Frame(self.root, padding=(10, 10, 10, 6))
+        top_controls = ttk.Frame(
+            self.root,
+            padding=(14, 14, 14, 10),
+            style="GenX.Root.TFrame",
+        )
         top_controls.grid(row=0, column=0, sticky="ew")
-        top_controls.columnconfigure(6, weight=1)
+        top_controls.columnconfigure(0, weight=1)
+        top_controls.columnconfigure(1, weight=1)
+
+        brand_frame = ttk.Frame(top_controls, style="GenX.Root.TFrame")
+        brand_frame.grid(row=0, column=0, sticky="w", pady=(0, 10))
+        ttk.Label(
+            brand_frame,
+            text=self.theme["brand_title"],
+            style="GenX.Brand.TLabel",
+        ).grid(row=0, column=0, sticky="w")
+        ttk.Label(
+            brand_frame,
+            text=self.theme["brand_subtitle"],
+            style="GenX.Subtitle.TLabel",
+        ).grid(row=1, column=0, sticky="w", pady=(2, 0))
+        ttk.Label(
+            brand_frame,
+            text="console // paired silhouettes // soft metrics // local playback",
+            style="GenX.RootConsole.TLabel",
+        ).grid(row=2, column=0, sticky="w", pady=(4, 0))
+
+        controls_frame = ttk.Frame(top_controls, style="GenX.Root.TFrame")
+        controls_frame.grid(row=1, column=0, sticky="ew")
+        controls_frame.columnconfigure(6, weight=1)
 
         ttk.Button(
-            top_controls,
+            controls_frame,
             text="Previous",
             command=self.go_to_previous_row,
+            style="GenX.TButton",
         ).grid(row=0, column=0, padx=(0, 8), sticky="w")
         ttk.Button(
-            top_controls,
+            controls_frame,
             text="Next",
             command=self.go_to_next_row,
+            style="GenX.TButton",
         ).grid(row=0, column=1, padx=(0, 16), sticky="w")
-        ttk.Label(top_controls, text="Jump To Index").grid(
+        ttk.Label(
+            controls_frame,
+            text="Jump To Index",
+            style="GenX.Root.TLabel",
+        ).grid(
             row=0, column=2, padx=(0, 6), sticky="w"
         )
-        jump_entry = ttk.Entry(top_controls, textvariable=self.jump_var, width=10)
+        jump_entry = ttk.Entry(
+            controls_frame,
+            textvariable=self.jump_var,
+            width=10,
+            style="GenX.TEntry",
+        )
         jump_entry.grid(row=0, column=3, padx=(0, 6), sticky="w")
         jump_entry.bind("<Return>", self._on_jump_requested)
         ttk.Button(
-            top_controls,
+            controls_frame,
             text="Go",
             command=lambda: self._jump_to_index(),
+            style="GenX.TButton",
         ).grid(row=0, column=4, padx=(0, 16), sticky="w")
-        ttk.Label(top_controls, text="Search").grid(row=0, column=5, padx=(0, 6), sticky="e")
-        search_entry = ttk.Entry(top_controls, textvariable=self.search_var, width=32)
+        ttk.Label(
+            controls_frame,
+            text="Search",
+            style="GenX.Root.TLabel",
+        ).grid(row=0, column=5, padx=(0, 6), sticky="e")
+        search_entry = ttk.Entry(
+            controls_frame,
+            textvariable=self.search_var,
+            width=32,
+            style="GenX.TEntry",
+        )
         search_entry.grid(row=0, column=6, sticky="ew")
         search_entry.bind("<KeyRelease>", self._on_search_changed)
 
-        main_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        main_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL, style="GenX.TPanedwindow")
         main_pane.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
-        left_frame = ttk.Frame(main_pane, padding=8)
+        left_shell = self._create_glass_shell(main_pane, self.theme["panel_alt"])
+        left_frame = ttk.Frame(left_shell, padding=10, style="GenX.PanelAlt.TFrame")
+        left_frame.pack(fill="both", expand=True)
         left_frame.columnconfigure(0, weight=1)
-        left_frame.rowconfigure(2, weight=1)
-        main_pane.add(left_frame, weight=1)
+        left_frame.rowconfigure(3, weight=1)
+        main_pane.add(left_shell, weight=1)
 
-        ttk.Label(left_frame, text="Split Filter").grid(row=0, column=0, sticky="w")
+        ttk.Label(left_frame, text="Split Filter", style="GenX.TLabel").grid(
+            row=0, column=0, sticky="w"
+        )
         split_box = ttk.Combobox(
             left_frame,
             textvariable=self.split_var,
             state="readonly",
             values=VALID_SPLIT_FILTERS,
             width=12,
+            style="GenX.TCombobox",
         )
         split_box.grid(row=1, column=0, sticky="ew", pady=(4, 10))
         split_box.bind("<<ComboboxSelected>>", self._on_split_filter_changed)
+        ttk.Label(
+            left_frame,
+            textvariable=self.browser_microcopy_var,
+            style="GenX.Console.TLabel",
+        ).grid(row=2, column=0, sticky="ew", pady=(0, 10))
 
         self.row_tree = ttk.Treeview(
             left_frame,
             columns=("split", "subject_key", "photo_id"),
             show="headings",
             height=20,
+            style="GenX.Treeview",
         )
         self.row_tree.heading("split", text="Split")
         self.row_tree.heading("subject_key", text="Subject Key")
@@ -612,50 +884,103 @@ class BodyMAccuracyExplorerApp:
         self.row_tree.column("split", width=70, stretch=False, anchor="center")
         self.row_tree.column("subject_key", width=220, stretch=True)
         self.row_tree.column("photo_id", width=220, stretch=True)
-        self.row_tree.grid(row=2, column=0, sticky="nsew")
+        self.row_tree.grid(row=3, column=0, sticky="nsew")
         self.row_tree.bind("<<TreeviewSelect>>", self._on_tree_selection_changed)
         row_tree_scrollbar = ttk.Scrollbar(
             left_frame,
             orient="vertical",
             command=self.row_tree.yview,
+            style="GenX.Vertical.TScrollbar",
         )
-        row_tree_scrollbar.grid(row=2, column=1, sticky="ns")
+        row_tree_scrollbar.grid(row=3, column=1, sticky="ns")
         self.row_tree.configure(yscrollcommand=row_tree_scrollbar.set)
 
-        right_frame = ttk.Frame(main_pane, padding=8)
+        right_shell = self._create_glass_shell(main_pane, self.theme["panel"])
+        right_frame = ttk.Frame(right_shell, padding=10, style="GenX.Panel.TFrame")
+        right_frame.pack(fill="both", expand=True)
         right_frame.columnconfigure(0, weight=1)
-        right_frame.rowconfigure(2, weight=1)
-        main_pane.add(right_frame, weight=3)
+        right_frame.rowconfigure(6, weight=1)
+        main_pane.add(right_shell, weight=3)
 
-        preview_frame = ttk.Frame(right_frame)
-        preview_frame.grid(row=0, column=0, sticky="ew")
+        hero_shell = self._create_glass_shell(right_frame, self.theme["panel"])
+        hero_shell.grid(row=0, column=0, sticky="ew")
+        hero_frame = ttk.Frame(hero_shell, padding=8, style="GenX.Hero.TFrame")
+        hero_frame.pack(fill="both", expand=True)
+        hero_frame.columnconfigure(0, weight=1)
+
+        self.hero_canvas = tk.Canvas(
+            hero_frame,
+            height=176,
+            bg=self.theme["hero_background"],
+            highlightthickness=0,
+            bd=0,
+        )
+        self.hero_canvas.grid(row=0, column=0, sticky="ew")
+        self.hero_canvas.bind("<Configure>", self._on_hero_canvas_configure)
+
+        hero_console_frame = ttk.Frame(hero_frame, style="GenX.Hero.TFrame")
+        hero_console_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        hero_console_frame.columnconfigure(0, weight=1)
+        ttk.Label(
+            hero_console_frame,
+            textvariable=self.console_microcopy_var,
+            style="GenX.Console.TLabel",
+        ).grid(row=0, column=0, sticky="ew")
+
+        self._create_soft_divider(right_frame).grid(row=1, column=0, sticky="ew", pady=(12, 12))
+
+        preview_frame = ttk.Frame(right_frame, style="GenX.Panel.TFrame")
+        preview_frame.grid(row=2, column=0, sticky="ew")
         preview_frame.columnconfigure(0, weight=1)
         preview_frame.columnconfigure(1, weight=1)
 
-        front_frame = ttk.LabelFrame(preview_frame, text="Front Mask", padding=8)
-        front_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        front_shell = self._create_glass_shell(preview_frame, self.theme["panel"])
+        front_shell.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        front_frame = ttk.LabelFrame(
+            front_shell,
+            text="Front Mask",
+            padding=8,
+            style="GenX.TLabelframe",
+        )
+        front_frame.pack(fill="both", expand=True)
         self.front_canvas = tk.Canvas(
             front_frame,
             width=self.preview_size[0],
             height=self.preview_size[1],
-            bg="#161616",
+            bg=self.theme["preview_background"],
             highlightthickness=0,
         )
         self.front_canvas.pack(fill="both", expand=True)
 
-        side_frame = ttk.LabelFrame(preview_frame, text="Side Mask", padding=8)
-        side_frame.grid(row=0, column=1, sticky="nsew")
+        side_shell = self._create_glass_shell(preview_frame, self.theme["panel"])
+        side_shell.grid(row=0, column=1, sticky="nsew")
+        side_frame = ttk.LabelFrame(
+            side_shell,
+            text="Side Mask",
+            padding=8,
+            style="GenX.TLabelframe",
+        )
+        side_frame.pack(fill="both", expand=True)
         self.side_canvas = tk.Canvas(
             side_frame,
             width=self.preview_size[0],
             height=self.preview_size[1],
-            bg="#161616",
+            bg=self.theme["preview_background"],
             highlightthickness=0,
         )
         self.side_canvas.pack(fill="both", expand=True)
 
-        details_frame = ttk.LabelFrame(right_frame, text="Sample Details", padding=8)
-        details_frame.grid(row=1, column=0, sticky="ew", pady=(10, 10))
+        self._create_soft_divider(right_frame).grid(row=3, column=0, sticky="ew", pady=(12, 12))
+
+        details_shell = self._create_glass_shell(right_frame, self.theme["panel"])
+        details_shell.grid(row=4, column=0, sticky="ew")
+        details_frame = ttk.LabelFrame(
+            details_shell,
+            text="Sample Details",
+            padding=8,
+            style="GenX.TLabelframe",
+        )
+        details_frame.pack(fill="both", expand=True)
         for column_index in range(4):
             details_frame.columnconfigure(column_index, weight=1)
 
@@ -671,7 +996,7 @@ class BodyMAccuracyExplorerApp:
         for index, (label_text, key) in enumerate(detail_pairs):
             row_index = index // 4
             column_index = (index % 4) * 2
-            ttk.Label(details_frame, text=label_text).grid(
+            ttk.Label(details_frame, text=label_text, style="GenX.Meta.TLabel").grid(
                 row=row_index,
                 column=column_index,
                 sticky="w",
@@ -681,10 +1006,20 @@ class BodyMAccuracyExplorerApp:
             ttk.Label(
                 details_frame,
                 textvariable=self.detail_vars[key],
+                style="GenX.TLabel",
             ).grid(row=row_index, column=column_index + 1, sticky="w", pady=2)
 
-        results_frame = ttk.LabelFrame(right_frame, text="Prediction vs Ground Truth", padding=8)
-        results_frame.grid(row=2, column=0, sticky="nsew")
+        self._create_soft_divider(right_frame).grid(row=5, column=0, sticky="ew", pady=(12, 12))
+
+        results_shell = self._create_glass_shell(right_frame, self.theme["panel"])
+        results_shell.grid(row=6, column=0, sticky="nsew")
+        results_frame = ttk.LabelFrame(
+            results_shell,
+            text="Prediction vs Ground Truth",
+            padding=8,
+            style="GenX.TLabelframe",
+        )
+        results_frame.pack(fill="both", expand=True)
         results_frame.columnconfigure(0, weight=1)
         results_frame.rowconfigure(0, weight=1)
 
@@ -693,6 +1028,7 @@ class BodyMAccuracyExplorerApp:
             columns=("target", "ground_truth", "prediction", "signed_error", "absolute_error"),
             show="headings",
             height=14,
+            style="GenX.Treeview",
         )
         self.results_tree.heading("target", text="Target")
         self.results_tree.heading("ground_truth", text="Ground Truth")
@@ -709,6 +1045,7 @@ class BodyMAccuracyExplorerApp:
             results_frame,
             orient="vertical",
             command=self.results_tree.yview,
+            style="GenX.Vertical.TScrollbar",
         )
         results_scrollbar.grid(row=0, column=1, sticky="ns")
         self.results_tree.configure(yscrollcommand=results_scrollbar.set)
@@ -717,16 +1054,37 @@ class BodyMAccuracyExplorerApp:
             right_frame,
             textvariable=self.summary_var,
             anchor="w",
-        ).grid(row=3, column=0, sticky="ew", pady=(10, 0))
+            style="GenX.Summary.TLabel",
+        ).grid(row=7, column=0, sticky="ew", pady=(10, 0))
 
-        status_label = ttk.Label(
+        ttk.Label(
             self.root,
             textvariable=self.status_var,
             anchor="w",
-            relief="sunken",
-            padding=(10, 4),
+            style="GenX.Status.TLabel",
+        ).grid(row=2, column=0, sticky="ew")
+
+    def _create_glass_shell(self, parent: tk.Misc, fill_color: str) -> tk.Frame:
+        return tk.Frame(
+            parent,
+            bg=fill_color,
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=self.theme["glass_highlight"],
+            highlightcolor=self.theme["glass_highlight"],
         )
-        status_label.grid(row=2, column=0, sticky="ew")
+
+    def _create_soft_divider(self, parent: tk.Misc) -> tk.Frame:
+        return tk.Frame(
+            parent,
+            bg=self.theme["divider"],
+            height=2,
+            bd=0,
+            highlightthickness=0,
+        )
+
+    def _on_hero_canvas_configure(self, _: tk.Event[Any]) -> None:
+        self._draw_hero_banner()
 
     def _populate_row_tree(self) -> None:
         current_selection = self.controller.current_row.photo_id if self.controller.current_row else None
@@ -742,6 +1100,7 @@ class BodyMAccuracyExplorerApp:
             self.row_tree.selection_set(current_selection)
             self.row_tree.focus(current_selection)
             self.row_tree.see(current_selection)
+        self._update_browser_microcopy()
 
     def _render_current_row(self) -> None:
         row = self.controller.current_row
@@ -751,6 +1110,8 @@ class BodyMAccuracyExplorerApp:
             self._render_preview_placeholder(self.front_canvas, "No row selected")
             self._render_preview_placeholder(self.side_canvas, "No row selected")
             self._clear_prediction_results()
+            self._draw_hero_banner()
+            self._update_console_microcopy()
             self._set_status("No explorer rows are available.")
             return
 
@@ -763,6 +1124,8 @@ class BodyMAccuracyExplorerApp:
         self.detail_vars["hwg_weight_kg"].set(f"{row.hwg_weight_kg:.2f}")
         self._render_preview(self.front_canvas, row.mask_path, is_front=True)
         self._render_preview(self.side_canvas, row.mask_left_path, is_front=False)
+        self._draw_hero_banner()
+        self._update_console_microcopy()
         self._set_status("Row selected.")
 
     def _render_preview(self, canvas: tk.Canvas, image_path: str, *, is_front: bool) -> None:
@@ -793,7 +1156,7 @@ class BodyMAccuracyExplorerApp:
             self.preview_size,
             method=_pil_resample_nearest(),
         )
-        background = Image.new("RGB", self.preview_size, color=(24, 24, 24))
+        background = Image.new("RGB", self.preview_size, color=self.theme["preview_background"])
         resized_image_rgb = resized_image.convert("RGB")
         offset_x = (self.preview_size[0] - resized_image_rgb.width) // 2
         offset_y = (self.preview_size[1] - resized_image_rgb.height) // 2
@@ -819,16 +1182,16 @@ class BodyMAccuracyExplorerApp:
             0,
             self.preview_size[0],
             self.preview_size[1],
-            fill="#161616",
+            fill=self.theme["preview_background"],
             outline="",
         )
         canvas.create_text(
             self.preview_size[0] // 2,
             self.preview_size[1] // 2,
             text=message,
-            fill="#d6d6d6",
+            fill=self.theme["preview_placeholder"],
             justify="center",
-            font=("Segoe UI", 11),
+            font=("Segoe UI", 11, "italic"),
         )
 
     def _clear_prediction_results(self) -> None:
@@ -903,6 +1266,166 @@ class BodyMAccuracyExplorerApp:
             f"Row: {current_position}/{row_count} | "
             f"Status: {self._status_message}"
         )
+        self._update_browser_microcopy()
+        self._update_console_microcopy()
+
+    def _update_browser_microcopy(self) -> None:
+        visible = len(self.controller.filtered_rows)
+        total = len(self.controller.all_rows)
+        split_filter = self.controller.split_filter.lower()
+        self.browser_microcopy_var.set(
+            f"browser // {visible:04d} visible // pool {total:04d} // "
+            f"filter {split_filter} // cache {self.controller.prediction_cache_size:03d}"
+        )
+
+    def _update_console_microcopy(self) -> None:
+        row = self.controller.current_row
+        if row is None:
+            self.console_microcopy_var.set(
+                "console // standby // select a row to enter playback mode"
+            )
+            return
+
+        position, total = self.controller.current_position()
+        self.console_microcopy_var.set(
+            f"console // split {row.split} // subject {row.subject_key} // "
+            f"photo {row.photo_id} // lane {position:04d}/{total:04d}"
+        )
+
+    def _draw_hero_banner(self) -> None:
+        width = max(self.hero_canvas.winfo_width(), 960)
+        height = max(self.hero_canvas.winfo_height(), 176)
+        base = Image.new(
+            "RGBA",
+            (width, height),
+            _hex_to_rgba(self.theme["hero_background"], 255),
+        )
+        blur_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        blur_draw = ImageDraw.Draw(blur_layer)
+        blur_draw.rectangle(
+            (24, 20, width - 220, 88),
+            fill=_hex_to_rgba(self.theme["hero_glow"], 86),
+        )
+        blur_draw.rectangle(
+            (width - 320, 28, width - 42, height - 28),
+            fill=_hex_to_rgba(self.theme["accent_soft"], 96),
+        )
+        blur_draw.rectangle(
+            (40, height - 68, width // 2, height - 28),
+            fill=_hex_to_rgba(self.theme["hero_band"], 112),
+        )
+        blur_layer = blur_layer.filter(ImageFilter.GaussianBlur(radius=14))
+        base = Image.alpha_composite(base, blur_layer)
+
+        line_draw = ImageDraw.Draw(base)
+        line_draw.line(
+            (0, 22, width, 22),
+            fill=_hex_to_rgba(self.theme["hero_outline"], 150),
+            width=2,
+        )
+        line_draw.line(
+            (0, height - 24, width, height - 24),
+            fill=_hex_to_rgba(self.theme["divider"], 190),
+            width=2,
+        )
+        line_draw.rectangle(
+            (width - 290, 30, width - 48, height - 30),
+            outline=_hex_to_rgba(self.theme["hero_outline"], 230),
+            width=2,
+        )
+        line_draw.rectangle(
+            (width - 258, 46, width - 82, height - 46),
+            outline=_hex_to_rgba(self.theme["accent"], 180),
+            width=1,
+        )
+        line_draw.rectangle(
+            (54, 38, 178, height - 42),
+            outline=_hex_to_rgba(self.theme["hero_outline"], 170),
+            width=1,
+        )
+
+        hero_image = ImageTk.PhotoImage(base.convert("RGB"))
+        self._hero_photo_image = hero_image
+        self.hero_canvas.delete("all")
+        self.hero_canvas.create_image(0, 0, anchor="nw", image=hero_image)
+
+        row = self.controller.current_row
+        if row is None:
+            context_title = "Soft Metrics Lounge"
+            context_line = "evaluation-first // no sample selected"
+            split_copy = "split // standby"
+        else:
+            context_title = row.photo_id[:24]
+            context_line = (
+                f"{row.subject_key} // {row.hwg_gender} // "
+                f"{row.hwg_height_cm:.1f} cm // {row.hwg_weight_kg:.1f} kg"
+            )
+            split_copy = f"split // {row.split}"
+
+        self.hero_canvas.create_text(
+            42,
+            42,
+            anchor="w",
+            text=self.theme["brand_title"],
+            fill=self.theme["text_primary"],
+            font=("Segoe UI Semibold", 30),
+        )
+        self.hero_canvas.create_text(
+            44,
+            74,
+            anchor="w",
+            text="BODY MEASUREMENT VISION // SILHOUETTE ACCURACY LAB",
+            fill=self.theme["hero_microcopy"],
+            font=("Consolas", 11, "italic"),
+        )
+        self.hero_canvas.create_text(
+            44,
+            120,
+            anchor="w",
+            text=context_title,
+            fill=self.theme["accent_deep"],
+            font=("Segoe UI Semibold", 18),
+        )
+        self.hero_canvas.create_text(
+            44,
+            146,
+            anchor="w",
+            text=context_line,
+            fill=self.theme["text_muted"],
+            font=("Consolas", 10),
+        )
+        self.hero_canvas.create_text(
+            width - 268,
+            56,
+            anchor="w",
+            text="PLAYBACK NODE",
+            fill=self.theme["accent_deep"],
+            font=("Consolas", 11, "bold"),
+        )
+        self.hero_canvas.create_text(
+            width - 268,
+            86,
+            anchor="w",
+            text=split_copy,
+            fill=self.theme["text_primary"],
+            font=("Consolas", 10),
+        )
+        self.hero_canvas.create_text(
+            width - 268,
+            112,
+            anchor="w",
+            text="paired silhouettes // cached replay",
+            fill=self.theme["hero_microcopy"],
+            font=("Consolas", 10),
+        )
+        self.hero_canvas.create_text(
+            width - 268,
+            138,
+            anchor="w",
+            text="...to work at your own pace",
+            fill=self.theme["text_muted"],
+            font=("Consolas", 9, "italic"),
+        )
 
     def _sync_tree_selection(self) -> None:
         current_row = self.controller.current_row
@@ -945,6 +1468,16 @@ class BodyMAccuracyExplorerApp:
             return
         self._render_current_row()
         self.request_prediction_for_current_row()
+
+
+def _hex_to_rgba(hex_color: str, alpha: int) -> tuple[int, int, int, int]:
+    stripped = hex_color.lstrip("#")
+    if len(stripped) != 6:
+        raise ValueError(f"Expected a 6-digit hex color, got: {hex_color!r}")
+    red = int(stripped[0:2], 16)
+    green = int(stripped[2:4], 16)
+    blue = int(stripped[4:6], 16)
+    return red, green, blue, alpha
 
 
 def _pil_resample_nearest() -> Any:
