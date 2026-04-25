@@ -26,6 +26,9 @@ The repo currently includes:
 - a local inference service and one-click prediction script
 - a themed Tkinter desktop accuracy explorer
 
+<img width="2559" height="1374" alt="image" src="https://github.com/user-attachments/assets/a7b862b9-98e2-409e-b03c-84440a8a610b" />
+
+
 ## Main idea
 
 The current training contract is:
